@@ -1,0 +1,72 @@
+name: CI-CD
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+
+  publish:
+    if: github.event_name == 'push'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: image
+        shell: bash
+        run: echo "name=ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]'):$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.image.outputs.name }}
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: publish
+    runs-on: ubuntu-latest
+    env:
+      KUBECONFIG_B64: ${{ secrets.KUBECONFIG }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+        if: env.KUBECONFIG_B64 != ''
+      - name: Deploy to Kubernetes when a kubeconfig is configured
+        if: env.KUBECONFIG_B64 != ''
+        env:
+          IMAGE: ${{ needs.publish.outputs.image }}
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "$KUBECONFIG_B64" | base64 --decode > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+          kubectl apply -f k8s/app/namespace.yaml
+          sed "s#ghcr.io/usuario-exemplo/api-fase3:latest#$IMAGE#" k8s/app/deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/app/service.yaml
+          kubectl rollout status deployment/api -n fase3 --timeout=180s
+      - name: Explain skipped deployment
+        if: env.KUBECONFIG_B64 == ''
+        run: echo "KUBECONFIG secret is not configured; image was published but deployment was skipped."

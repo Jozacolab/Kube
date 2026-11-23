@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+kind.exe
+helm.exe
+check_grafana.py
+Entrega_Fase_03_Administracao_Containers.docx
+TEMPLATE ENTREGA_Fase 3_Administracao de containers em ambientes distribuidos.docx
+TEMPLATE_ORIGINAL_BACKUP.docx
+Guia_Passo_a_Passo_Fase_03.docx
+Guia_pratico.md
+Relatorio_Fase_03.docx
+prompt_CERTA_devops_kubernetes.md

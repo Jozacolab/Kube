@@ -1,0 +1,13 @@
+grafana:
+  service:
+    type: ClusterIP
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    serviceMonitorSelectorNilUsesHelmValues: true
+    serviceMonitorNamespaceSelector: {}

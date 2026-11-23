@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  api-dashboard.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "id": 1,
+          "targets": [{"expr": "sum(rate(api_http_requests_total[5m]))", "legendFormat": "requests/s", "refId": "A"}],
+          "title": "Requisicoes HTTP por segundo",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "cores"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "id": 2,
+          "targets": [{"expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"fase3\", pod=~\"api-.*\", container!=\"\", container!=\"POD\"}[5m]))", "legendFormat": "{{pod}}", "refId": "A"}],
+          "title": "CPU utilizada por pod",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "id": 3,
+          "targets": [{"expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"fase3\", pod=~\"api-.*\", container!=\"\", container!=\"POD\"})", "legendFormat": "{{pod}}", "refId": "A"}],
+          "title": "Memoria utilizada por pod",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "id": 4,
+          "targets": [{"expr": "count(kube_pod_status_ready{namespace=\"fase3\", condition=\"true\", pod=~\"api-.*\"})", "legendFormat": "pods prontos", "refId": "A"}],
+          "title": "Réplicas prontas",
+          "type": "timeseries"
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["fase3", "kubernetes"],
+      "templating": {"list": []},
+      "time": {"from": "now-1h", "to": "now"},
+      "title": "API - Fase 3",
+      "uid": "api-fase3"
+    }
